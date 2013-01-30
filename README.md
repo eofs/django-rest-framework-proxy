@@ -73,3 +73,28 @@ url(r'^item/$', ProxyListView.as_view(), name='item-list'),
 url(r'^item/(?P<pk>[0-9]+)$', ProxyDetailView.as_view(), name='item-detail'),
 ```
 
+## Permissions ##
+You can limit access by using Permission classes and custom Views.
+See http://django-rest-framework.org/api-guide/permissions.html for more information
+```
+# permissions.py
+from rest_framework.permissions import BasePermission, SAFE_METHODS
+
+class AdminOrReadOnly(BasePermission):
+    """
+    Read permission for everyone. Only admins can modify content.
+    """
+    def has_permission(self, request, view, obj=None):
+        if (request.method in SAFE_METHODS or
+            request.user and request.user.is_staff):
+            return True
+        return False
+
+```
+```
+# views.py
+from permissions import AdminOrReadOnly
+
+class ItemListProxy(ProxyView):
+    permission_classes = (AdminOrReadOnly,)
+```
