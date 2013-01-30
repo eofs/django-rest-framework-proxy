@@ -57,10 +57,17 @@ class ProxyView(BaseProxyView):
             headers['Authorization'] = 'Basic %s' % base64string
         return headers
 
-    def get(self, request, *args, **kwargs):
-        request = self.get_proxy_request(request)
+    def redirect_request(self, request):
+        proxy_request = self.get_proxy_request(request)
+        if request.DATA:
+            proxy_request.add_data(request.DATA.urlencode())
+
+        # Override HTTP method
+        proxy_request.get_method = lambda: request.method
+
         try:
-            response = urllib2.urlopen(request, timeout=self.proxy_settings.TIMEOUT)
+            response = urllib2.urlopen(proxy_request, timeout=self.proxy_settings.TIMEOUT)
+            status = response.getcode()
             body = json.loads(response.read())
         except urllib2.HTTPError, e:
             body = {
@@ -68,20 +75,21 @@ class ProxyView(BaseProxyView):
                 'code': e.code,
                 'msg': e.msg,
             }
-        return Response(body)
+            status = e.code
+
+        return Response(body, status=status)
+
+    def get(self, request, *args, **kwargs):
+        return self.redirect_request(request)
 
     def put(self, request, *args, **kwargs):
-        # TODO Handling
-        return Response({'type': 'PUT'})
+        return self.redirect_request(request)
 
     def post(self, request, *args, **kwargs):
-        # TODO Handling
-        return Response({'type': 'POST'})
+        return self.redirect_request(request)
 
     def patch(self, request, *args, **kwargs):
-        # TODO Handling
-        return Response({'type': 'PATCH'})
+        return self.redirect_request(request)
 
     def delete(self, request, *args, **kwargs):
-        # TODO Handling
-        return Response({'type': 'DELETE'})
+        return self.redirect_request(request)
