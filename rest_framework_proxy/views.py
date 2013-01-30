@@ -1,7 +1,6 @@
 import base64
-import urllib2
-import MultipartPostHandler
 import json
+import requests
 
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -25,34 +24,28 @@ class ProxyView(BaseProxyView):
     def get_source_path(self):
         return self.source % self.kwargs
 
-    def create_request_url(self, request):
+    def get_request_url(self, request):
         path = self.get_source_path()
         url = '%s/%s' % (self.get_proxy_host(), path)
-        if request.QUERY_PARAMS:
-            # Do not pass 'format' parameter as we are forcing Accept value
-            params = request.QUERY_PARAMS.copy()
-            del params['format']
-            url += '?' + params.urlencode()
         return url
 
-    def create_request(self, request, url, body=None, headers={}):
+    def get_request_params(self, request):
+        if request.QUERY_PARAMS:
+            return request.QUERY_PARAMS.dict()
+        return {}
+
+    def get_request_data(self, request):
+        data = {}
         if request.DATA:
-            body = body or {}
-            body = dict(body.items() + request.DATA.dict().items())
+            data.update(requests.DATA.dict())
+        return data
 
+    def get_request_files(self, request):
+        files = {}
         if request.FILES:
-            body = body or {}
             for field, content in request.FILES.items():
-                body[field] = content.read()
-            opener = urllib2.build_opener(MultipartPostHandler.MultipartPostHandler)
-            urllib2.install_opener(opener)
-
-        return urllib2.Request(url, body, headers)
-
-    def get_proxy_request(self, request):
-        url = self.create_request_url(request)
-        headers = self.get_headers(request)
-        return self.create_request(request, url, headers=headers)
+                files[field] = content.read()
+        return files
 
     def get_default_headers(self):
         return {
@@ -69,37 +62,43 @@ class ProxyView(BaseProxyView):
             headers['Authorization'] = 'Basic %s' % base64string
         return headers
 
-    def redirect_request(self, request):
-        proxy_request = self.get_proxy_request(request)
+    def proxy(self, request):
+        url = self.get_request_url(request)
+        params = self.get_request_params(request)
+        data = self.get_request_data(request)
+        files = self.get_request_files(request)
+        headers = self.get_headers(request)
 
-        # Override HTTP method
-        proxy_request.get_method = lambda: request.method
 
-        try:
-            response = urllib2.urlopen(proxy_request, timeout=self.proxy_settings.TIMEOUT)
-            status = response.getcode()
-            body = json.loads(response.read())
-        except urllib2.HTTPError, e:
+        response = requests.request(request.method, url,
+                params=params,
+                data=data,
+                files=files,
+                headers=headers)
+
+        if response.status_code != requests.codes.ok:
             body = {
                 'detail': 'Proxy error',
-                'code': e.code,
-                'msg': e.msg,
+                'code': response.status_code,
+                'msg': response.reason,
             }
-            status = e.code
+        else:
+            body = json.loads(response.text)
+        status = response.status_code
 
-        return Response(body, status=status)
+        return Response(body, status)
 
     def get(self, request, *args, **kwargs):
-        return self.redirect_request(request)
+        return self.proxy(request)
 
     def put(self, request, *args, **kwargs):
-        return self.redirect_request(request)
+        return self.proxy(request)
 
     def post(self, request, *args, **kwargs):
-        return self.redirect_request(request)
+        return self.proxy(request)
 
     def patch(self, request, *args, **kwargs):
-        return self.redirect_request(request)
+        return self.proxy(request)
 
     def delete(self, request, *args, **kwargs):
-        return self.redirect_request(request)
+        return self.proxy(request)
