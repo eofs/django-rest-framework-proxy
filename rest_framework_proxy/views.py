@@ -57,7 +57,7 @@ class ProxyView(BaseProxyView):
             headers['Authorization'] = 'Basic %s' % base64string
         return headers
 
-    def redirect_request(self, request):
+    def proxy(self, request):
         proxy_request = self.get_proxy_request(request)
         if request.DATA:
             proxy_request.add_data(request.DATA.urlencode())
@@ -80,16 +80,16 @@ class ProxyView(BaseProxyView):
         return Response(body, status=status)
 
     def get(self, request, *args, **kwargs):
-        return self.redirect_request(request)
+        return self.proxy(request)
 
     def put(self, request, *args, **kwargs):
-        return self.redirect_request(request)
+        return self.proxy(request)
 
     def post(self, request, *args, **kwargs):
-        return self.redirect_request(request)
+        return self.proxy(request)
 
     def patch(self, request, *args, **kwargs):
-        return self.redirect_request(request)
+        return self.proxy(request)
 
     def delete(self, request, *args, **kwargs):
-        return self.redirect_request(request)
+        return self.proxy(request)
