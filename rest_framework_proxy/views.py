@@ -1,5 +1,6 @@
 import base64
 import urllib2
+import MultipartPostHandler
 import json
 
 from rest_framework.response import Response
@@ -34,13 +35,24 @@ class ProxyView(BaseProxyView):
             url += '?' + params.urlencode()
         return url
 
-    def create_request(self, url, body=None, headers={}):
+    def create_request(self, request, url, body=None, headers={}):
+        if request.DATA:
+            body = body or {}
+            body = dict(body.items() + request.DATA.dict().items())
+
+        if request.FILES:
+            body = body or {}
+            for field, content in request.FILES.items():
+                body[field] = content.read()
+            opener = urllib2.build_opener(MultipartPostHandler.MultipartPostHandler)
+            urllib2.install_opener(opener)
+
         return urllib2.Request(url, body, headers)
 
     def get_proxy_request(self, request):
         url = self.create_request_url(request)
         headers = self.get_headers(request)
-        return self.create_request(url, headers=headers)
+        return self.create_request(request, url, headers=headers)
 
     def get_default_headers(self):
         return {
@@ -59,8 +71,6 @@ class ProxyView(BaseProxyView):
 
     def redirect_request(self, request):
         proxy_request = self.get_proxy_request(request)
-        if request.DATA:
-            proxy_request.add_data(request.DATA.urlencode())
 
         # Override HTTP method
         proxy_request.get_method = lambda: request.method
