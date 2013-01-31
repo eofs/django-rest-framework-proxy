@@ -2,8 +2,10 @@ import base64
 import json
 import requests
 
+from requests.exceptions import ConnectionError, SSLError, Timeout
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
 
 from rest_framework_proxy.settings import api_proxy_settings
 
@@ -37,7 +39,7 @@ class ProxyView(BaseProxyView):
     def get_request_data(self, request):
         data = {}
         if request.DATA:
-            data.update(requests.DATA.dict())
+            data.update(request.DATA.dict())
         return data
 
     def get_request_files(self, request):
@@ -69,22 +71,35 @@ class ProxyView(BaseProxyView):
         files = self.get_request_files(request)
         headers = self.get_headers(request)
 
-
-        response = requests.request(request.method, url,
-                params=params,
-                data=data,
-                files=files,
-                headers=headers)
-
-        if response.status_code != requests.codes.ok:
+        response = None
+        try:
+            response = requests.request(request.method, url,
+                    params=params,
+                    data=data,
+                    files=files,
+                    headers=headers)
+        except (ConnectionError, SSLError), e:
+            status = requests.status_codes.codes.bad_gateway
             body = {
-                'detail': 'Proxy error',
-                'code': response.status_code,
-                'msg': response.reason,
+                'code': status,
+                'msg': str(e.message),
             }
-        else:
-            body = json.loads(response.text)
-        status = response.status_code
+        except (Timeout), e:
+            status = requests.status_codes.gateway_timeout
+            body = {
+                'code': status,
+                'msg': str(e.message),
+            }
+
+        if response:
+            status = response.status_code
+            if response.status_code >= 300:
+                body = {
+                    'code': status,
+                    'msg': response.reason,
+                }
+            else:
+                body = json.loads(response.text)
 
         return Response(body, status)
 
