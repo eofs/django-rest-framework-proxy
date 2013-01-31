@@ -3,6 +3,7 @@ import requests
 
 from StringIO import StringIO
 from requests.exceptions import ConnectionError, SSLError, Timeout
+from django.http import HttpResponse
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.utils.mediatypes import media_type_matches
@@ -107,16 +108,30 @@ class ProxyView(BaseProxyView):
         except AttributeError:
             return parsed
 
+    def create_response(self, response):
+        if self.proxy_settings.RETURN_RAW:
+            return HttpResponse(response.text, status=response.status_code,
+                    content_type=response.headers.get('content-type'))
+
+        status = response.status_code
+        if status >= 400:
+            body = {
+                'code': status,
+                'error': response.reason,
+            }
+        else:
+            body = self.parse_proxy_response(response)
+        return Response(body, status)
+
+    def create_error_response(self, body, status):
+        return Response(body, status)
+
     def proxy(self, request):
         url = self.get_request_url(request)
         params = self.get_request_params(request)
         data = self.get_request_data(request)
         files = self.get_request_files(request)
         headers = self.get_headers(request)
-
-        response = None
-        body = {}
-        status = requests.status_codes.codes.ok
 
         try:
             response = requests.request(request.method, url,
@@ -127,28 +142,18 @@ class ProxyView(BaseProxyView):
                     timeout=self.proxy_settings.TIMEOUT)
         except (ConnectionError, SSLError):
             status = requests.status_codes.codes.bad_gateway
-            body = {
+            return self.create_error_response({
                 'code': status,
                 'error': 'Bad gateway',
-            }
+            }, status)
         except (Timeout):
             status = requests.status_codes.codes.gateway_timeout
-            body = {
+            return self.create_error_response({
                 'code': status,
                 'error': 'Gateway timed out',
-            }
+            }, status)
 
-        if response is not None:
-            status = response.status_code
-            if response.status_code >= 400:
-                body = {
-                    'code': status,
-                    'error': response.reason,
-                }
-            else:
-                body = self.parse_proxy_response(response)
-
-        return Response(body, status)
+        return self.create_response(response)
 
     def get(self, request, *args, **kwargs):
         return self.proxy(request)
