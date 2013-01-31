@@ -6,7 +6,6 @@ from requests.exceptions import ConnectionError, SSLError, Timeout
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-
 from rest_framework_proxy.settings import api_proxy_settings
 
 
