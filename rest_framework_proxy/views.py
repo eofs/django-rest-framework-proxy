@@ -34,11 +34,11 @@ class ProxyView(BaseProxyView):
 
     def get_request_params(self, request):
         if request.QUERY_PARAMS:
-            params = request.QUERY_PARAMS.dict()
-            for param in params:
-                if param in self.proxy_settings.DISALLOWED_PARAMS:
-                    del params[param]
-            return params
+            proxy_params = {}
+            for key, value in request.QUERY_PARAMS.items():
+                if key not in self.proxy_settings.DISALLOWED_PARAMS:
+                    proxy_params[key] = value
+            return proxy_params
         return {}
 
     def get_request_data(self, request):
