@@ -1,10 +1,12 @@
 import base64
-import json
 import requests
 
+from StringIO import StringIO
 from requests.exceptions import ConnectionError, SSLError, Timeout
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.utils.mediatypes import media_type_matches
+from rest_framework.exceptions import UnsupportedMediaType
 
 from rest_framework_proxy.settings import api_proxy_settings
 
@@ -32,7 +34,11 @@ class ProxyView(BaseProxyView):
 
     def get_request_params(self, request):
         if request.QUERY_PARAMS:
-            return request.QUERY_PARAMS.dict()
+            params = request.QUERY_PARAMS.dict()
+            for param in params:
+                if param in self.proxy_settings.DISALLOWED_PARAMS:
+                    del params[param]
+            return params
         return {}
 
     def get_request_data(self, request):
@@ -48,13 +54,23 @@ class ProxyView(BaseProxyView):
                 files[field] = content.read()
         return files
 
-    def get_default_headers(self):
+    def get_default_headers(self, request):
         return {
-            'Accept': 'application/json',
+            'Accept': request.META.get('HTTP_ACCEPT', self.proxy_settings.DEFAULT_HTTP_ACCEPT),
+            'Accept-Language': request.META.get('HTTP_ACCEPT-LANGUAGE', self.proxy_settings.DEFAULT_HTTP_ACCEPT_LANGUAGE),
+            'Content_Type': request.META.get('HTTP_CONTENT_TYPE', self.proxy_settings.DEFAULT_HTTP_CONTENT_TYPE),
         }
 
     def get_headers(self, request):
-        headers = self.get_default_headers()
+        #import re
+        #regex = re.compile('^HTTP_')
+        #request_headers = dict((regex.sub('', header), value) for (header, value) in request.META.items() if header.startswith('HTTP_'))
+        headers = self.get_default_headers(request)
+
+        # Translate Accept HTTP field
+        accept_maps = self.proxy_settings.ACCEPT_MAPS
+        for old, new in accept_maps.items():
+           headers['Accept'] = headers['Accept'].replace(old, new)
 
         username = self.proxy_settings.AUTH['user']
         password = self.proxy_settings.AUTH['password']
@@ -62,6 +78,34 @@ class ProxyView(BaseProxyView):
             base64string = base64.encodestring('%s:%s' % (username, password)).replace('\n', '')
             headers['Authorization'] = 'Basic %s' % base64string
         return headers
+
+    def parse_proxy_response(self, response):
+        """
+        Modified version of rest_framework.request.Request._parse(self)
+        """
+        parsers = self.get_parsers()
+        stream = StringIO(response._content)
+        content_type = response.headers.get('content-type', None)
+
+        if stream is None or content_type is None:
+            return None
+
+        parser = None
+        for item in parsers:
+            if media_type_matches(item.media_type, content_type):
+                parser = item
+
+        if not parser:
+            raise UnsupportedMediaType(content_type)
+
+        parsed = parser.parse(stream, content_type)
+
+        # Parser classes may return the raw data, or a
+        # DataAndFiles object. Return only data.
+        try:
+            return parsed.data
+        except AttributeError:
+            return parsed
 
     def proxy(self, request):
         url = self.get_request_url(request)
@@ -76,7 +120,8 @@ class ProxyView(BaseProxyView):
                     params=params,
                     data=data,
                     files=files,
-                    headers=headers)
+                    headers=headers,
+                    timeout=self.proxy_settings.TIMEOUT)
         except (ConnectionError, SSLError), e:
             status = requests.status_codes.codes.bad_gateway
             body = {
@@ -98,7 +143,7 @@ class ProxyView(BaseProxyView):
                     'msg': response.reason,
                 }
             else:
-                body = json.loads(response.text)
+                body = self.parse_proxy_response(response)
 
         return Response(body, status)
 
