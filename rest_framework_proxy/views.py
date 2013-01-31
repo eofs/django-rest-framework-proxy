@@ -129,13 +129,13 @@ class ProxyView(BaseProxyView):
             status = requests.status_codes.codes.bad_gateway
             body = {
                 'code': status,
-                'msg': str(e.message),
+                'error': str(e.message),
             }
         except (Timeout), e:
             status = requests.status_codes.gateway_timeout
             body = {
                 'code': status,
-                'msg': str(e.message),
+                'error': str(e.message),
             }
 
         if response:
@@ -143,7 +143,7 @@ class ProxyView(BaseProxyView):
             if response.status_code >= 300:
                 body = {
                     'code': status,
-                    'msg': response.reason,
+                    'error': response.reason,
                 }
             else:
                 body = self.parse_proxy_response(response)
