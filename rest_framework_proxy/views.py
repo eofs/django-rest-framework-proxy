@@ -71,6 +71,9 @@ class ProxyView(BaseProxyView):
         headers = self.get_headers(request)
 
         response = None
+        body = {}
+        status = requests.status_codes.ok
+
         try:
             response = requests.request(request.method, url,
                     params=params,
