@@ -15,8 +15,8 @@ Provides views to redirect incoming request to another API server.
 
 #Installation#
 
-```
-pip install django-rest-framework-proxy 
+```bash
+$ pip install django-rest-framework-proxy 
 ```
 *Note: Not in PyPI yet*
 
@@ -25,7 +25,7 @@ There are couple of ways to use proxies. You can either use provided views as is
 
 ## Settings ##
 settings.py
-```
+```python
 REST_PROXY = {
     'HOST': 'https://api.example.com',
     'AUTH': {
@@ -37,7 +37,7 @@ REST_PROXY = {
 
 
 ## Simple way ##
-```
+```python
 # urls.py
 from rest_framework_proxy.views import ProxyView
 
@@ -48,7 +48,7 @@ url(r'^item/$', ProxyView.as_view(source='items/'), name='item-list'),
 url(r'^item/(?P<pk>[0-9]+)$', ProxyView.as_view(source='items/%(pk)s'), name='item-detail'),
 ```
 ## Complex way ##
-```
+```python
 # views.py
 from rest_framework_proxy.views import ProxyView
 
@@ -65,7 +65,7 @@ class ItemDetailProxy(ProxyView):
   source = 'items/%(pk)s'
 
 ```
-```
+```python
 # urls.py
 from views import ProxyListView, ProxyDetailView
 
@@ -76,7 +76,7 @@ url(r'^item/(?P<pk>[0-9]+)$', ProxyDetailView.as_view(), name='item-detail'),
 ## Permissions ##
 You can limit access by using Permission classes and custom Views.
 See http://django-rest-framework.org/api-guide/permissions.html for more information
-```
+```python
 # permissions.py
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 
@@ -91,7 +91,7 @@ class AdminOrReadOnly(BasePermission):
         return False
 
 ```
-```
+```python
 # views.py
 from permissions import AdminOrReadOnly
 
