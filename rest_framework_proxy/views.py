@@ -1,9 +1,11 @@
 import base64
-import urllib2
 import json
+import requests
 
+from requests.exceptions import ConnectionError, SSLError, Timeout
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
 
 from rest_framework_proxy.settings import api_proxy_settings
 
@@ -24,23 +26,28 @@ class ProxyView(BaseProxyView):
     def get_source_path(self):
         return self.source % self.kwargs
 
-    def create_request_url(self, request):
+    def get_request_url(self, request):
         path = self.get_source_path()
         url = '%s/%s' % (self.get_proxy_host(), path)
-        if request.QUERY_PARAMS:
-            # Do not pass 'format' parameter as we are forcing Accept value
-            params = request.QUERY_PARAMS.copy()
-            del params['format']
-            url += '?' + params.urlencode()
         return url
 
-    def create_request(self, url, body=None, headers={}):
-        return urllib2.Request(url, body, headers)
+    def get_request_params(self, request):
+        if request.QUERY_PARAMS:
+            return request.QUERY_PARAMS.dict()
+        return {}
 
-    def get_proxy_request(self, request):
-        url = self.create_request_url(request)
-        headers = self.get_headers(request)
-        return self.create_request(url, headers=headers)
+    def get_request_data(self, request):
+        data = {}
+        if request.DATA:
+            data.update(request.DATA.dict())
+        return data
+
+    def get_request_files(self, request):
+        files = {}
+        if request.FILES:
+            for field, content in request.FILES.items():
+                files[field] = content.read()
+        return files
 
     def get_default_headers(self):
         return {
@@ -58,26 +65,43 @@ class ProxyView(BaseProxyView):
         return headers
 
     def proxy(self, request):
-        proxy_request = self.get_proxy_request(request)
-        if request.DATA:
-            proxy_request.add_data(request.DATA.urlencode())
+        url = self.get_request_url(request)
+        params = self.get_request_params(request)
+        data = self.get_request_data(request)
+        files = self.get_request_files(request)
+        headers = self.get_headers(request)
 
-        # Override HTTP method
-        proxy_request.get_method = lambda: request.method
-
+        response = None
         try:
-            response = urllib2.urlopen(proxy_request, timeout=self.proxy_settings.TIMEOUT)
-            status = response.getcode()
-            body = json.loads(response.read())
-        except urllib2.HTTPError, e:
+            response = requests.request(request.method, url,
+                    params=params,
+                    data=data,
+                    files=files,
+                    headers=headers)
+        except (ConnectionError, SSLError), e:
+            status = requests.status_codes.codes.bad_gateway
             body = {
-                'detail': 'Proxy error',
-                'code': e.code,
-                'msg': e.msg,
+                'code': status,
+                'msg': str(e.message),
             }
-            status = e.code
+        except (Timeout), e:
+            status = requests.status_codes.gateway_timeout
+            body = {
+                'code': status,
+                'msg': str(e.message),
+            }
 
-        return Response(body, status=status)
+        if response:
+            status = response.status_code
+            if response.status_code >= 300:
+                body = {
+                    'code': status,
+                    'msg': response.reason,
+                }
+            else:
+                body = json.loads(response.text)
+
+        return Response(body, status)
 
     def get(self, request, *args, **kwargs):
         return self.proxy(request)
