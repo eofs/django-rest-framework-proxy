@@ -116,7 +116,7 @@ class ProxyView(BaseProxyView):
 
         response = None
         body = {}
-        status = requests.status_codes.ok
+        status = requests.status_codes.codes.ok
 
         try:
             response = requests.request(request.method, url,
@@ -125,22 +125,22 @@ class ProxyView(BaseProxyView):
                     files=files,
                     headers=headers,
                     timeout=self.proxy_settings.TIMEOUT)
-        except (ConnectionError, SSLError), e:
+        except (ConnectionError, SSLError):
             status = requests.status_codes.codes.bad_gateway
             body = {
                 'code': status,
-                'error': str(e.message),
+                'error': 'Bad gateway',
             }
-        except (Timeout), e:
-            status = requests.status_codes.gateway_timeout
+        except (Timeout):
+            status = requests.status_codes.codes.gateway_timeout
             body = {
                 'code': status,
-                'error': str(e.message),
+                'error': 'Gateway timed out',
             }
 
-        if response:
+        if response is not None:
             status = response.status_code
-            if response.status_code >= 300:
+            if response.status_code >= 400:
                 body = {
                     'code': status,
                     'error': response.reason,
