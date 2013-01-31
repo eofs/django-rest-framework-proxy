@@ -73,7 +73,45 @@ url(r'^item/$', ProxyListView.as_view(), name='item-list'),
 url(r'^item/(?P<pk>[0-9]+)$', ProxyDetailView.as_view(), name='item-detail'),
 ```
 
-## Permissions ##
+# Settings #
+<table>
+    <thead>
+        <tr>
+            <td>Setting</td>
+            <td>Default</td>
+            <td>Comment</td>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>HOST</td>
+            <td><code>None</code></td>
+            <td>Proxy request to this host (e.g. https://example.com/api/).</td>
+        </tr>
+        <tr>
+            <td>AUTH</td>
+            <td><code>{'user': None, 'password': None}</code></td>
+            <td>Proxy requests using HTTP Basic Authentication.</td>
+        </tr>
+        <tr>
+            <td>TIMEOUT</td>
+            <td><code>None</code></td>
+            <td>Timeout value for proxy requests.</td>
+        </tr>
+        <tr>
+            <td>ACCEPT_MAPS</td>
+            <td><code>{'text/html': 'application/json'}</code></td>
+            <td>Modify Accept-headers before proxying them. You can use this to disallow certain types. By default <code>text/html</code> is translated to return JSON data.</td>
+        </tr>
+        <tr>
+            <td>DISALLOWED_PARAMS</td>
+            <td><code>('format',)</code></td>
+            <td>Remove defined query parameters from proxy request.</td>
+        </tr>
+    </tbody>
+</table>
+
+# Permissions #
 You can limit access by using Permission classes and custom Views.
 See http://django-rest-framework.org/api-guide/permissions.html for more information
 ```python
