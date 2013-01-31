@@ -24,8 +24,8 @@ $ pip install django-rest-framework-proxy
 There are couple of ways to use proxies. You can either use provided views as is or subclass them.
 
 ## Settings ##
-settings.py
 ```python
+# settings.py
 REST_PROXY = {
     'HOST': 'https://api.example.com',
     'AUTH': {
