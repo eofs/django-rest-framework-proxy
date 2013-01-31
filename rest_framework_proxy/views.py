@@ -88,7 +88,7 @@ class ProxyView(BaseProxyView):
         content_type = response.headers.get('content-type', None)
 
         if stream is None or content_type is None:
-            return None
+            return {}
 
         parser = None
         for item in parsers:
