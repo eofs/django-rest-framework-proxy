@@ -131,6 +131,7 @@ class AdminOrReadOnly(BasePermission):
 ```
 ```python
 # views.py
+from rest_framework_proxy.views import ProxyView
 from permissions import AdminOrReadOnly
 
 class ItemListProxy(ProxyView):
