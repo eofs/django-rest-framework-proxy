@@ -16,6 +16,7 @@ class BaseProxyView(APIView):
     proxy_settings = api_proxy_settings
     proxy_host = None
     source = None
+    return_raw = False
 
 
 class ProxyView(BaseProxyView):
@@ -109,7 +110,7 @@ class ProxyView(BaseProxyView):
             return parsed
 
     def create_response(self, response):
-        if self.proxy_settings.RETURN_RAW:
+        if self.return_raw or self.proxy_settings.RETURN_RAW:
             return HttpResponse(response.text, status=response.status_code,
                     content_type=response.headers.get('content-type'))
 
