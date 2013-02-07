@@ -134,6 +134,11 @@ class ProxyView(BaseProxyView):
         files = self.get_request_files(request)
         headers = self.get_headers(request)
 
+        if files and 'Content-Type' in headers:
+            # Remove Content-Type header so requests.py can generate correct
+            # multipart request
+            del headers['Content-Type']
+
         try:
             response = requests.request(request.method, url,
                     params=params,
