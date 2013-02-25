@@ -19,6 +19,16 @@ install_requires = [
     'djangorestframework>=2.2.0',
     'requests>=1.1.0'
 ]
+classifiers = [
+    'Environment :: Web Environment',
+    'Framework :: Django',
+    'Intended Audience :: Developers',
+    'License :: OSI Approved :: BSD License',
+    'Operating System :: OS Independent',
+    'Programming Language :: Python :: 2.7',
+    'Topic :: Internet :: WWW/HTTP',
+    'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
+]
 
 
 def get_version(package):
@@ -73,5 +83,6 @@ setup(
     author_email=author_email,
     packages=get_packages(package),
     package_data=get_package_data(package),
-    install_requires=install_requires
+    install_requires=install_requires,
+    classifiers=classifiers
 )
