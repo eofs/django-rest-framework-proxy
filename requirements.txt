@@ -1,2 +1,3 @@
-djangorestframework>=2.1.17
+django>=1.4
+djangorestframework>=2.2.0
 requests>=1.1.0
