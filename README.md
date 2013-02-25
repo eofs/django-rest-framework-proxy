@@ -18,7 +18,6 @@ Provides views to redirect incoming request to another API server.
 ```bash
 $ pip install django-rest-framework-proxy 
 ```
-*Note: Not in PyPI yet*
 
 #Usage#
 There are couple of ways to use proxies. You can either use provided views as is or subclass them.
