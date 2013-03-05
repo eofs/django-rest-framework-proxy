@@ -33,7 +33,7 @@ DEFAULTS = {
         'OFFSET': 'offset',
         'LIMIT': 'limit',
     },
-    'MODEL_LIST_FROM_FIELD': 'results'
+    'MODEL_LIST_FROM_FIELD': None
 }
 
 api_proxy_settings = APISettings(USER_SETTINGS, DEFAULTS)

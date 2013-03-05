@@ -137,20 +137,24 @@ class ProxyQuerySet(query.QuerySet):
         if status >= 400:
             raise ProxyRequestException(status, response.reason)
 
-        from_field = self.model.get_resource_list_from_field()
-        if not from_field:
-            from_field = api_proxy_settings.MODEL_LIST_FROM_FIELD
+        from_field = api_proxy_settings.MODEL_LIST_FROM_FIELD
+        try:
+            # Try to set value from model
+            from_field = self.model.get_resource_list_from_field()
+        except AttributeError:
+            pass
 
         data = self._parse(response)
-        results = data.get(from_field, None)
-        if results:
+        if from_field:
             """
-            Pagination enabled. Get  objects from "root" field.
+            Get objects from specified field instead using complete result as is.
             """
-            for obj in data.get(from_field):
-                yield self._deserialize(obj)
-        else:
-            yield self._deserialize(data)
+            results = data.get(from_field, None)
+            if results:
+                for obj in data.get(from_field):
+                    yield self._deserialize(obj)
+            return
+        yield self._deserialize(data)
 
     def filter(self, *args, **kwargs):
         if args or kwargs:
