@@ -26,12 +26,14 @@ DEFAULTS = {
 
     # Do not pass following parameters
     'DISALLOWED_PARAMS': ('format',),
+
     'MODEL_PARAM_MAP': {
         'PAGE': 'page',
         'PAGE_SIZE': 'page_size',
         'OFFSET': 'offset',
         'LIMIT': 'limit',
-    }
+    },
+    'MODEL_LIST_FROM_FIELD': 'results'
 }
 
 api_proxy_settings = APISettings(USER_SETTINGS, DEFAULTS)
