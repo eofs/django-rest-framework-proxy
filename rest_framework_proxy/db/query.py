@@ -23,6 +23,8 @@ class Query(object):
         self.filters = {}
         self.low_mark, self.high_mark = 0, None
         self.page, self.page_size = None, None
+        self.select_related = False
+        self.where = False
 
     def add_ordering(self, *ordering):
         """
