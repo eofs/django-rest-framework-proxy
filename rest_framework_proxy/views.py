@@ -53,7 +53,7 @@ class ProxyView(BaseProxyView):
         files = {}
         if request.FILES:
             for field, content in request.FILES.items():
-                files[field] = content.read()
+                files[field] = content
         return files
 
     def get_default_headers(self, request):
