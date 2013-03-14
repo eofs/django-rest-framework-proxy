@@ -3,6 +3,7 @@ import requests
 
 from StringIO import StringIO
 from requests.exceptions import ConnectionError, SSLError, Timeout
+from requests import sessions
 from django.http import HttpResponse
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -10,6 +11,8 @@ from rest_framework.utils.mediatypes import media_type_matches
 from rest_framework.exceptions import UnsupportedMediaType
 
 from rest_framework_proxy.settings import api_proxy_settings
+from rest_framework_proxy.adapters import StreamingHTTPAdapter
+from rest_framework_proxy.utils import StreamingMultipart, generate_boundary
 
 
 class BaseProxyView(APIView):
@@ -17,7 +20,6 @@ class BaseProxyView(APIView):
     proxy_host = None
     source = None
     return_raw = False
-
 
 class ProxyView(BaseProxyView):
     """
@@ -134,18 +136,37 @@ class ProxyView(BaseProxyView):
         files = self.get_request_files(request)
         headers = self.get_headers(request)
 
-        if files and 'Content-Type' in headers:
-            # Remove Content-Type header so requests.py can generate correct
-            # multipart request
-            del headers['Content-Type']
-
         try:
-            response = requests.request(request.method, url,
-                    params=params,
-                    data=data,
-                    files=files,
-                    headers=headers,
-                    timeout=self.proxy_settings.TIMEOUT)
+            if files:
+                """
+                By default requests library uses chunked upload for files
+                but it is much more easier for servers to handle streamed
+                uploads.
+
+                This new implementation is also lightweight as files are not
+                read entirely into memory.
+                """
+                boundary = generate_boundary()
+                headers['Content-Type'] = 'multipart/form-data; boundary=%s' % boundary
+
+                body = StreamingMultipart(data, files, boundary)
+
+                session = sessions.Session()
+                session.mount('http://', StreamingHTTPAdapter())
+                session.mount('https://', StreamingHTTPAdapter())
+
+                response = session.request(request.method, url,
+                        params=params,
+                        data=body,
+                        headers=headers,
+                        timeout=self.proxy_settings.TIMEOUT)
+            else:
+                response = requests.request(request.method, url,
+                        params=params,
+                        data=data,
+                        files=files,
+                        headers=headers,
+                        timeout=self.proxy_settings.TIMEOUT)
         except (ConnectionError, SSLError):
             status = requests.status_codes.codes.bad_gateway
             return self.create_error_response({
