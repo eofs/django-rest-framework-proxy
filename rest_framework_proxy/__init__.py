@@ -8,7 +8,7 @@ from rest_framework_proxy.db.managers import ProxyManager
 def ensure_proxy_manager(sender, **kwargs):
     cls = sender
 
-    if (hasattr(cls, 'get_resource') \
+    if (hasattr(cls, 'get_resource_class') \
        and not isinstance(cls, ProxyManager)):
         sender.add_to_class('objects', ProxyManager())
         sender.add_to_class('_base_manager', ProxyManager())
