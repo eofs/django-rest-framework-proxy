@@ -48,12 +48,6 @@ class ProxyModel(models.Model):
         resource_class = resolve_resource(self.get_resource_class())
         return resource_class()
 
-    def get_resource_url_detail(self):
-        conf = self.get_resource_conf()
-        if self.pk:
-            return '%s%s' % (conf['url'], self.pk)
-        return conf['url']
-
     def save_base(self, raw=False, cls=None, origin=None, force_insert=False,
                   force_update=False, using=None, update_fields=None):
         """
@@ -76,8 +70,6 @@ class ProxyModel(models.Model):
         if origin and not meta.auto_created:
             signals.pre_save.send(sender=origin, instance=self, raw=raw,
                                   update_fields=update_fields)
-
-        conf = self.get_resource_conf()
 
         # If we are in a raw save, save the object exactly as presented.
         # That means that we don't try to be smart about saving attributes
@@ -155,16 +147,16 @@ class ProxyModel(models.Model):
                 if not pk_set:
                     if force_update or update_fields:
                         raise ValueError("Cannot force an update in save() with no primary key.")
-                    fields = [f.attname for f in fields if not isinstance(f, AutoField)]
+                    fields = [(f.attname, getattr(self, f.attname)) for f in fields if not isinstance(f, AutoField)]
 
                 record_exists = False
 
                 update_pk = bool(meta.has_auto_field and not pk_set)
-                print update_pk
+                import pdb; pdb.set_trace() ### XXX BREAKPOINT
 
-                response = requests.post(self.get_resource_url_detail(), headers=conf['headers'],
+                response = requests.post(resource.get_url(), headers=resource.get_headers(),
                                         data=self._request_data(fields),
-                                        auth=self.get_authentication())
+                                        auth=resource.get_authentication())
 
                 status = response.status_code in (requests.status_codes.codes.ok,
                                                   requests.status_codes.codes.created)
