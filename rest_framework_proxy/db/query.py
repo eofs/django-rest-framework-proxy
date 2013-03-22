@@ -1,16 +1,11 @@
 import requests
 
-from StringIO import StringIO
 from django.db.models import query
 from django.core.exceptions import FieldError
 from django.db.models.sql.constants import ORDER_PATTERN
-from rest_framework.settings import api_settings
-from rest_framework.utils.mediatypes import media_type_matches
-from rest_framework.exceptions import UnsupportedMediaType
-from rest_framework.serializers import ModelSerializer
-
+from rest_framework_proxy.exceptions import RemoteModelException, RemoteRequestException
 from rest_framework_proxy.settings import api_proxy_settings
-from rest_framework_proxy.exceptions import ProxyException, ProxyRequestException
+from rest_framework_proxy.utils import resolve_resource
 
 
 class Query(object):
@@ -52,7 +47,7 @@ class Query(object):
     def clear_ordering(self):
         self.order_by = []
 
-    def clone(self):
+    def clone(self, klass=None, memo=None, **kwargs):
         return self
 
     def filter(self, *args, **kwargs):
@@ -110,6 +105,11 @@ class Query(object):
 
         return parameters
 
+    def has_results(self, *args, **kwargs):
+        """ Fake implementation """
+        return True
+
+
 class ProxyQuerySet(query.QuerySet):
     """
     QuerySet to access data from remote
@@ -125,38 +125,39 @@ class ProxyQuerySet(query.QuerySet):
         self._prefetch_related_lookups = []
         self._prefetch_done = False
 
+        self.resource = self.get_resource()
+
+    def get_resource(self):
+        resource_class = resolve_resource(self.model.get_resource_class())
+        return resource_class()
+
     def iterator(self):
         """
         Apply this QuerySet to the remote
         """
-        response = requests.get(self.model.get_resource_url(),
-                                headers=self.model.get_resource_headers(),
+        result_root = self.resource.opts.result_root
+
+        response = requests.get(self.resource.get_url(),
+                                headers=self.resource.get_headers(),
                                 params=self.query.parameters,
-                                auth=(api_proxy_settings.AUTH['user'],
-                                      api_proxy_settings.AUTH['password']))
+                                auth=self.resource.get_authentication())
 
         status = response.status_code
         if status >= 400:
-            raise ProxyRequestException(status, response.reason)
+            raise RemoteRequestException(status, response.reason)
 
-        from_field = api_proxy_settings.MODEL_LIST_FROM_FIELD
-        try:
-            # Try to set value from model
-            from_field = self.model.get_resource_list_from_field()
-        except AttributeError:
-            pass
+        data = self.resource.parse(response)
 
-        data = self._parse(response)
-        if from_field:
+        if result_root:
             """
             Get objects from specified field instead using complete result as is.
             """
-            results = data.get(from_field, None)
+            results = data.get(result_root, None)
             if results:
-                for obj in data.get(from_field):
-                    yield self._deserialize(obj)
-            return
-        yield self._deserialize(data)
+                for obj in data.get(result_root):
+                    yield self.resource.deserialize(obj)
+        else:
+            yield self.resource.deserialize(data)
 
     def filter(self, *args, **kwargs):
         if args or kwargs:
@@ -188,7 +189,7 @@ class ProxyQuerySet(query.QuerySet):
 
         id = kwargs.get(field)
         if id is None:
-            raise ProxyException('ID is required. Cannot fetch single item without it.')
+            raise RemoteModelException('ID is required. Cannot fetch single item without it.')
 
         # Remove ID field from copy of kwargs
         filtered_kwargs = dict(kwargs)
@@ -199,25 +200,23 @@ class ProxyQuerySet(query.QuerySet):
         if self.query.can_filter():
             clone = clone.order_by()
 
-        URL = '%s%s' % (self.model.get_resource_url(), id)
-
-        response = requests.get(URL,
-                                headers=self.model.get_resource_headers(),
+        response = requests.get(url=self.resource.get_url(id),
+                                headers=self.resource.get_headers(),
                                 params=clone.query.parameters,
-                                auth=(api_proxy_settings.AUTH['user'],
-                                      api_proxy_settings.AUTH['password']))
+                                auth=self.resource.get_authentication())
 
         status = response.status_code
+
         if status >= 400:
             if status == 404:
                 raise self.model.DoesNotExist(
                     "%s matching query does not exist. "
                     "Lookup parameters were %s" %
                     (self.model._meta.object_name, kwargs))
-            raise ProxyRequestException(status, response.reason)
+            raise RemoteRequestException(status, response.reason)
 
-        data = self._parse(response)
-        return self._deserialize(data)
+        data = self.resource.parse(response)
+        return self.resource.deserialize(data)
 
     def _clone(self, klass=None, setup=False, **kwargs):
         if klass is None:
@@ -230,48 +229,3 @@ class ProxyQuerySet(query.QuerySet):
         if setup and hasattr(c, '_setup_query'):
             c._setup_query()
         return c
-
-    def _parse(self, response):
-        """
-        Parse response and return data
-        """
-        stream = StringIO(response.content)
-        content_type = response.headers.get('content-type', None)
-
-        if stream is None or content_type is None:
-            return
-
-        parsers = [parser() for parser in api_settings.DEFAULT_PARSER_CLASSES]
-        parser = None
-        for item in parsers:
-            if media_type_matches(item.media_type, content_type):
-                parser = item
-
-        if not parser:
-            raise UnsupportedMediaType(content_type)
-
-        parsed = parser.parse(stream, content_type)
-
-        # Parser classes may return the raw data, or a
-        # DataAndFiles object. Return only data.
-        try:
-            return parsed.data
-        except AttributeError:
-            return parsed
-
-    def _deserialize(self, data):
-        try:
-            serializer_class = self.model.get_resource_serializer()
-        except AttributeError:
-            serializer_class = None
-
-        if not serializer_class:
-            class DefaultSerializer(ModelSerializer):
-                class Meta:
-                    model = self.model
-            serializer_class = DefaultSerializer
-
-        serializer = serializer_class(data=data)
-        if serializer.is_valid():
-            return serializer.object
-        raise ProxyException('Could not deserialize data.')

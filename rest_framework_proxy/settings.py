@@ -33,7 +33,12 @@ DEFAULTS = {
         'OFFSET': 'offset',
         'LIMIT': 'limit',
     },
-    'MODEL_LIST_FROM_FIELD': None
+    'MODEL_RESULT_ROOT': None,
+    'MODEL_DEFAULT_SERIALIZER': 'rest_framework.serializers.ModelSerializer',
 }
 
-api_proxy_settings = APISettings(USER_SETTINGS, DEFAULTS)
+IMPORT_STRINGS = (
+    'MODEL_DEFAULT_SERIALIZER',
+)
+
+api_proxy_settings = APISettings(USER_SETTINGS, DEFAULTS, IMPORT_STRINGS)

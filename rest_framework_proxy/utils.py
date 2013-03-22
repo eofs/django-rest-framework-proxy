@@ -1,6 +1,8 @@
 import mimetypes
 
+from django.utils import importlib
 from requests.packages.urllib3.filepost import choose_boundary
+from rest_framework import six
 
 
 def generate_boundary():
@@ -62,3 +64,17 @@ class StreamingMultipart(object):
 
     def build_multipart_footer(self):
         return b'--%s--\r\n' % self.boundary
+
+
+
+def import_from_string(value):
+    parts = value.split('.')
+    module_path, class_name = '.'.join(parts[:-1]), parts[-1]
+    module = importlib.import_module(module_path)
+    return getattr(module, class_name)
+
+def resolve_resource(resource_class):
+    if isinstance(resource_class, six.string_types):
+        resource_class = import_from_string(resource_class)
+
+    return resource_class
