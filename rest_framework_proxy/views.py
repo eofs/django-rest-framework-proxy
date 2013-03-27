@@ -88,7 +88,7 @@ class ProxyView(BaseProxyView):
         Modified version of rest_framework.request.Request._parse(self)
         """
         parsers = self.get_parsers()
-        stream = StringIO(response._content)
+        stream = StringIO(response.content)
         content_type = response.headers.get('content-type', None)
 
         if stream is None or content_type is None:
@@ -118,9 +118,11 @@ class ProxyView(BaseProxyView):
 
         status = response.status_code
         if status >= 400:
+            message = self.parse_proxy_response(response)
             body = {
                 'code': status,
                 'error': response.reason,
+                'message': message,
             }
         else:
             body = self.parse_proxy_response(response)
