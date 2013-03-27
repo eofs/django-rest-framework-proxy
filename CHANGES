@@ -1,3 +1,7 @@
+MASTER
+------
+- Display error message from backend
+
 1.1.0
 -----
 - Streaming upload support added
