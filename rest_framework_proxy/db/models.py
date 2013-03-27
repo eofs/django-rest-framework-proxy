@@ -116,7 +116,6 @@ class ProxyModel(models.Model):
             pk_val = self._get_pk_val(meta)
             pk_set = pk_val is not None
             record_exists = True
-            manager = cls._base_manager
             resource = self.get_resource()
 
             if pk_set:
@@ -152,7 +151,6 @@ class ProxyModel(models.Model):
                 record_exists = False
 
                 update_pk = bool(meta.has_auto_field and not pk_set)
-                import pdb; pdb.set_trace() ### XXX BREAKPOINT
 
                 response = requests.post(resource.get_url(), headers=resource.get_headers(),
                                         data=self._request_data(fields),
@@ -165,16 +163,10 @@ class ProxyModel(models.Model):
                     raise DatabaseError('Could not create a new object. Server reported HTTP code %d' % response.status_code)
 
                 data = resource.parse(response)
-                print data
-
-                result = manager._insert([self], fields=fields, return_id=update_pk, using=using, raw=raw)
 
                 if update_pk:
-                    setattr(self, meta.pk.attname, result)
-            #transaction.commit_unless_managed(using=using)
+                    setattr(self, meta.pk.attname, data.get('id'))
 
-        # Store the database on which the object was saved
-        self._state.db = using
         # Once saved, this is no longer a to-be-added instance.
         self._state.adding = False
 
