@@ -123,7 +123,7 @@ class ProxyModel(models.Model):
                 # no force_insert)
                 if (force_update or update_fields) or not force_insert:
                     if force_update or non_pks:
-                        values = [(f.attname, (raw and getattr(self, f.attname) or f.pre_save(self, False))) for f in non_pks]
+                        values = [(f.name, (raw and getattr(self, f.attname) or f.pre_save(self, False))) for f in non_pks]
                         if values:
                             response = requests.patch(resource.get_url(pk_val), headers=resource.get_headers(),
                                            data=self._request_data(values),
@@ -146,7 +146,7 @@ class ProxyModel(models.Model):
                 if not pk_set:
                     if force_update or update_fields:
                         raise ValueError("Cannot force an update in save() with no primary key.")
-                    fields = [(f.attname, getattr(self, f.attname)) for f in fields if not isinstance(f, AutoField)]
+                    fields = [(f.name, getattr(self, f.attname)) for f in fields if not isinstance(f, AutoField)]
 
                 record_exists = False
 
@@ -160,7 +160,9 @@ class ProxyModel(models.Model):
                                                   requests.status_codes.codes.created)
 
                 if not status:
-                    raise DatabaseError('Could not create a new object. Server reported HTTP code %d' % response.status_code)
+                    message = resource.parse(response)
+                    raise DatabaseError('Could not create a new object. Server reported HTTP %d: %s' %
+                                        (response.status_code, message))
 
                 data = resource.parse(response)
 
@@ -187,4 +189,4 @@ class ProxyModel(models.Model):
 
         if serializer.is_valid():
             return serializer.data
-        raise RemoteModelException('Serializer did not validate')
+        raise RemoteModelException('Serializer did not validate: %s' % serializer.errors)

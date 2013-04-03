@@ -3,6 +3,7 @@ import requests
 from django.db.models import query
 from django.core.exceptions import FieldError
 from django.db.models.sql.constants import ORDER_PATTERN
+from django.db.models.query_utils import Q
 from rest_framework_proxy.exceptions import RemoteModelException, RemoteRequestException
 from rest_framework_proxy.settings import api_proxy_settings
 from rest_framework_proxy.utils import resolve_resource
@@ -166,6 +167,20 @@ class ProxyQuerySet(query.QuerySet):
         clone = self._clone()
         clone.query.filter(*args, **kwargs)
         return clone
+
+    def complex_filter(self, filter_obj):
+        """
+        Returns a new QuerySet instance with filter_obj added to the filters.
+
+        filter_obj can be a Q object (or anything with an add_to_query()
+        method) or a dictionary of keyword lookup arguments.
+
+        This exists to support framework features such as 'limit_choices_to',
+        and usually it will be more natural to use other methods.
+        """
+        if isinstance(filter_obj, Q) or hasattr(filter_obj, 'add_to_query'):
+            raise NotImplementedError('Not implemented yet.')
+        return self.filter(**filter_obj)
 
     def page(self, page, size=None):
         clone = self._clone()
