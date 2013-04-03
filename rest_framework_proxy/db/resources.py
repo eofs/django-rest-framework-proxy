@@ -98,6 +98,11 @@ class RemoteResource(ResourceBase):
         """
         serializer = self.get_serializer(data=data)
 
+        try:
+            serializer.is_valid()
+        except AttributeError as e:
+            raise RemoteModelException(e)
+
         if serializer.is_valid():
             obj = serializer.object
             pk_field = self.model._meta.pk.attname
