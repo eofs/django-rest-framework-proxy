@@ -61,7 +61,7 @@ class ProxyView(BaseProxyView):
     def get_default_headers(self, request):
         return {
             'Accept': request.META.get('HTTP_ACCEPT', self.proxy_settings.DEFAULT_HTTP_ACCEPT),
-            'Accept-Language': request.META.get('HTTP_ACCEPT-LANGUAGE', self.proxy_settings.DEFAULT_HTTP_ACCEPT_LANGUAGE),
+            'Accept-Language': request.META.get('HTTP_ACCEPT_LANGUAGE', self.proxy_settings.DEFAULT_HTTP_ACCEPT_LANGUAGE),
             'Content-Type': request.META.get('CONTENT_TYPE', self.proxy_settings.DEFAULT_CONTENT_TYPE),
         }
 
