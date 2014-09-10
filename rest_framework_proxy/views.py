@@ -1,7 +1,8 @@
 import base64
 import requests
 
-from StringIO import StringIO
+from django.utils import six
+from django.utils.six import BytesIO as StringIO
 from requests.exceptions import ConnectionError, SSLError, Timeout
 from requests import sessions
 from django.http import HttpResponse
@@ -42,7 +43,7 @@ class ProxyView(BaseProxyView):
             for param in self.proxy_settings.DISALLOWED_PARAMS:
                 if param in qp:
                     del qp[param]
-            return qp.iterlists()
+            return six.iterlists(qp)
         return {}
 
     def get_request_data(self, request):
