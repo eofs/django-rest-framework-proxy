@@ -25,7 +25,10 @@ DEFAULTS = {
     },
 
     # Do not pass following parameters
-    'DISALLOWED_PARAMS': ('format',)
+    'DISALLOWED_PARAMS': ('format',),
+
+    # Perform a SSL Cert Verification on URI requests are being proxied to
+    'VERIFY_SSL': True,
 }
 
 api_proxy_settings = APISettings(USER_SETTINGS, DEFAULTS)
