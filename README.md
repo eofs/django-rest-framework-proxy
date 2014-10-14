@@ -16,7 +16,7 @@ Provides views to redirect incoming request to another API server.
 #Installation#
 
 ```bash
-$ pip install django-rest-framework-proxy 
+$ pip install django-rest-framework-proxy
 ```
 
 #Usage#
@@ -110,6 +110,47 @@ url(r'^item/(?P<pk>[0-9]+)$', ProxyDetailView.as_view(), name='item-detail'),
     </tbody>
 </table>
 
+# SSL Verification #
+By default, `django-rest-framework-proxy` will verify the SSL certificates when proxying requests, defaulting
+to security. In some cases, it may be desirable to not verify SSL certificates. This setting can be modified
+by overriding the `VERIFY_SSL` value in the `REST_PROXY` settings.
+
+Additionally, one may set the `verify_proxy` settings on their proxy class:
+
+```python
+# views.py
+from rest_framework_proxy.views import ProxyView
+
+class ItemListProxy(ProxyView):
+  """
+  List of items
+  """
+  source = 'items/'
+  verify_ssl = False
+
+```
+
+Finally, if there is complex business logic needed to determine if one should verify SSL, then
+you can override the `get_verify_ssl()` method on your proxy view class:
+
+```python
+# views.py
+from rest_framework_proxy.views import ProxyView
+
+class ItemListProxy(ProxyView):
+  """
+  List of items
+  """
+  source = 'items/'
+
+  def get_verify_ssl(self, request):
+    host = self.get_proxy_host(request)
+    if host.startswith('intranet.'):
+      return True
+    return False
+
+```
+
 # Permissions #
 You can limit access by using Permission classes and custom Views.
 See http://django-rest-framework.org/api-guide/permissions.html for more information
@@ -137,6 +178,7 @@ class ItemListProxy(ProxyView):
     permission_classes = (AdminOrReadOnly,)
 ```
 
+
 #License#
 
 Copyright (c) 2014, Tomi Pajunen
@@ -144,7 +186,7 @@ All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 
-1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer. 
+1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
 2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE

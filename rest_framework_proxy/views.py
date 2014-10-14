@@ -21,6 +21,8 @@ class BaseProxyView(APIView):
     proxy_host = None
     source = None
     return_raw = False
+    verify_ssl = None
+
 
 class ProxyView(BaseProxyView):
     """
@@ -84,6 +86,9 @@ class ProxyView(BaseProxyView):
             headers['Authorization'] = 'Basic %s' % base64string
         return headers
 
+    def get_verify_ssl(self, request):
+        return self.verify_ssl or self.proxy_settings.VERIFY_SSL
+
     def parse_proxy_response(self, response):
         """
         Modified version of rest_framework.request.Request._parse(self)
@@ -136,6 +141,7 @@ class ProxyView(BaseProxyView):
         data = self.get_request_data(request)
         files = self.get_request_files(request)
         headers = self.get_headers(request)
+        verify_ssl = self.get_verify_ssl(request)
 
         try:
             if files:
@@ -160,14 +166,16 @@ class ProxyView(BaseProxyView):
                         params=params,
                         data=body,
                         headers=headers,
-                        timeout=self.proxy_settings.TIMEOUT)
+                        timeout=self.proxy_settings.TIMEOUT,
+                        verify=verify_ssl)
             else:
                 response = requests.request(request.method, url,
                         params=params,
                         data=data,
                         files=files,
                         headers=headers,
-                        timeout=self.proxy_settings.TIMEOUT)
+                        timeout=self.proxy_settings.TIMEOUT,
+                        verify=verify_ssl)
         except (ConnectionError, SSLError):
             status = requests.status_codes.codes.bad_gateway
             return self.create_error_response({
