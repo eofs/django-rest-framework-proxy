@@ -1,3 +1,7 @@
+master
+-----
+- Optionally override SSL verification setting
+
 1.2.0
 -----
 - Python 3 support
