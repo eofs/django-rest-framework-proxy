@@ -32,12 +32,16 @@ class ProxyView(BaseProxyView):
         return self.proxy_host or self.proxy_settings.HOST
 
     def get_source_path(self):
-        return self.source % self.kwargs
+        if self.source:
+            return self.source % self.kwargs
+        return None
 
     def get_request_url(self, request):
+        host = self.get_proxy_host()
         path = self.get_source_path()
-        url = '%s/%s' % (self.get_proxy_host(), path)
-        return url
+        if path:
+            return '/'.join([host, path])
+        return host
 
     def get_request_params(self, request):
         if request.QUERY_PARAMS:
@@ -51,7 +55,7 @@ class ProxyView(BaseProxyView):
     def get_request_data(self, request):
         data = {}
         if request.DATA:
-            data.update(request.DATA.dict())
+            data.update(request.DATA)
         return data
 
     def get_request_files(self, request):
