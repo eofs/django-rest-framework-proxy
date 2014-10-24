@@ -1,6 +1,9 @@
-master
+1.3.0
 -----
 - Optionally override SSL verification setting
+- Allow empty sources (request goes directly to the host)
+- Fixed POST requests when using json payload
+- Do not automatically prepend trailing slash to proxy request
 
 1.2.0
 -----
