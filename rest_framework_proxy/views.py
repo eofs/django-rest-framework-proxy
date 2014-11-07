@@ -139,7 +139,7 @@ class ProxyView(BaseProxyView):
     def create_error_response(self, body, status):
         return Response(body, status)
 
-    def proxy(self, request):
+    def proxy(self, request, *args, **kwargs):
         url = self.get_request_url(request)
         params = self.get_request_params(request)
         data = self.get_request_data(request)
@@ -196,16 +196,16 @@ class ProxyView(BaseProxyView):
         return self.create_response(response)
 
     def get(self, request, *args, **kwargs):
-        return self.proxy(request)
+        return self.proxy(request, *args, **kwargs)
 
     def put(self, request, *args, **kwargs):
-        return self.proxy(request)
+        return self.proxy(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
-        return self.proxy(request)
+        return self.proxy(request, *args, **kwargs)
 
     def patch(self, request, *args, **kwargs):
-        return self.proxy(request)
+        return self.proxy(request, *args, **kwargs)
 
     def delete(self, request, *args, **kwargs):
-        return self.proxy(request)
+        return self.proxy(request, *args, **kwargs)
