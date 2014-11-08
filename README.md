@@ -1,6 +1,10 @@
 Django Rest Framework Proxy
 ====================
 
+[![PyPI version](https://badge.fury.io/py/django-rest-framework-proxy.svg)](http://badge.fury.io/py/django-rest-framework-proxy)
+[![Build Status](https://travis-ci.org/eofs/django-rest-framework-proxy.svg?branch=master)](https://travis-ci.org/eofs/django-rest-framework-proxy)
+[![Coverage Status](https://coveralls.io/repos/eofs/django-rest-framework-proxy/badge.png?branch=master)](https://coveralls.io/r/eofs/django-rest-framework-proxy?branch=master)
+
 Provides views to redirect incoming request to another API server.
 
 **Features:**
