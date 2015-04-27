@@ -1,4 +1,5 @@
 import base64
+import json
 import requests
 
 from django.utils import six
@@ -53,10 +54,11 @@ class ProxyView(BaseProxyView):
         return {}
 
     def get_request_data(self, request):
-        data = {}
-        if request.DATA:
-            data.update(request.DATA)
-        return data
+        if request.content_type == 'application/json':
+            return json.dumps(request.DATA) if request.DATA \
+                    else json.dumps(request.data)
+
+        return request.DATA if request.DATA else request.data
 
     def get_request_files(self, request):
         files = {}
