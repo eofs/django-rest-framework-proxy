@@ -54,7 +54,7 @@ class ProxyView(BaseProxyView):
         return {}
 
     def get_request_data(self, request):
-        if request.content_type == 'application/json':
+        if 'application/json' in request.content_type:
             return json.dumps(request.DATA) if request.DATA \
                     else json.dumps(request.data)
 
