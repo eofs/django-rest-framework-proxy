@@ -3,6 +3,7 @@ from django.test import TestCase
 from mock import Mock, patch
 
 from rest_framework_proxy.views import ProxyView
+from rest_framework.test import APIRequestFactory
 
 
 class ProxyViewTests(TestCase):
@@ -21,3 +22,21 @@ class ProxyViewTests(TestCase):
                 42,
                 foo='bar'
             )
+
+    def test_passes_cookies_through_to_request(self):
+        request = Mock()
+        view = ProxyView()
+        view.get_cookies = lambda r: {'test_cookie': 'value'}
+
+        factory = APIRequestFactory()
+        request = factory.post('some/url', data={}, cookies={'original_request_cookie': 'I will not get passed'})
+        request.content_type = 'application/json'
+        request.QUERY_PARAMS = ''
+        request.DATA = {}
+        request.data = {}
+
+        with patch('rest_framework_proxy.views.requests.request') as patched_requests:
+            view.proxy(request)
+            args, kwargs = patched_requests.call_args
+            request_cookies = kwargs['cookies']
+            self.assertEqual(request_cookies, {'test_cookie': 'value'})
