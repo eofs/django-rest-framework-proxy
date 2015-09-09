@@ -36,7 +36,8 @@ class ProxyViewTests(TestCase):
         request.data = {}
 
         with patch('rest_framework_proxy.views.requests.request') as patched_requests:
-            view.proxy(request)
-            args, kwargs = patched_requests.call_args
-            request_cookies = kwargs['cookies']
-            self.assertEqual(request_cookies, {'test_cookie': 'value'})
+            with patch.object(view, 'create_response'):
+                view.proxy(request)
+                args, kwargs = patched_requests.call_args
+                request_cookies = kwargs['cookies']
+                self.assertEqual(request_cookies, {'test_cookie': 'value'})
