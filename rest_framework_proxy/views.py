@@ -95,6 +95,9 @@ class ProxyView(BaseProxyView):
     def get_verify_ssl(self, request):
         return self.verify_ssl or self.proxy_settings.VERIFY_SSL
 
+    def get_cookies(self, requests):
+        return None
+
     def parse_proxy_response(self, response):
         """
         Modified version of rest_framework.request.Request._parse(self)
@@ -148,6 +151,7 @@ class ProxyView(BaseProxyView):
         files = self.get_request_files(request)
         headers = self.get_headers(request)
         verify_ssl = self.get_verify_ssl(request)
+        cookies = self.get_cookies(request)
 
         try:
             if files:
@@ -173,7 +177,8 @@ class ProxyView(BaseProxyView):
                         data=body,
                         headers=headers,
                         timeout=self.proxy_settings.TIMEOUT,
-                        verify=verify_ssl)
+                        verify=verify_ssl,
+                        cookies=cookies)
             else:
                 response = requests.request(request.method, url,
                         params=params,
@@ -181,7 +186,8 @@ class ProxyView(BaseProxyView):
                         files=files,
                         headers=headers,
                         timeout=self.proxy_settings.TIMEOUT,
-                        verify=verify_ssl)
+                        verify=verify_ssl,
+                        cookies=cookies)
         except (ConnectionError, SSLError):
             status = requests.status_codes.codes.bad_gateway
             return self.create_error_response({
