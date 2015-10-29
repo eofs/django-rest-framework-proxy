@@ -1,3 +1,5 @@
+#! /usr/bin/env python
+
 import sys
 
 try:
@@ -17,6 +19,12 @@ try:
             "django.contrib.sites",
             "rest_framework_proxy",
         ],
+        MIDDLEWARE_CLASSES=[
+            'django.middleware.common.CommonMiddleware',
+            'django.contrib.sessions.middleware.SessionMiddleware',
+            'django.contrib.auth.middleware.AuthenticationMiddleware',
+            'django.contrib.messages.middleware.MessageMiddleware',
+        ],
         SITE_ID=1,
         NOSE_ARGS=['-s'],
     )
@@ -33,7 +41,7 @@ try:
 except ImportError:
     import traceback
     traceback.print_exc()
-    raise ImportError("To fix this error, run: pip install -r requirements-test.txt")
+    raise ImportError("To fix this error, run: pip install -r requirements/requirements-testing.txt")
 
 
 def run_tests(*test_args):

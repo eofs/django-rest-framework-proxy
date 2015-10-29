@@ -1,28 +1,31 @@
 language: python
 
-python:
-  - "2.6"
-  - "2.7"
+sudo: false
 
 env:
-  - DJANGO_VERSION=1.5.6
-  - DJANGO_VERSION=1.6.3
-  - DJANGO_VERSION=1.7.10
-  - DJANGO_VERSION=1.8.4
-
+  - TOX_ENV=py35-django19
+  - TOX_ENV=py34-django19
+  - TOX_ENV=py27-django19
+  - TOX_ENV=py34-django18
+  - TOX_ENV=py33-django18
+  - TOX_ENV=py32-django18
+  - TOX_ENV=py27-django18
+  - TOX_ENV=py34-django17
+  - TOX_ENV=py33-django17
+  - TOX_ENV=py32-django17
+  - TOX_ENV=py27-django17
 
 matrix:
-  exclude:
-    # Python 2.6 support has been dropped in Django 1.7
-    - python: "2.6"
-      env: DJANGO_VERSION=1.7.10
-    - python: "2.6"
-      env: DJANGO_VERSION=1.8.4
+  # Python 3.5 not yet available on travis, watch this to see when it is.
+  fast_finish: true
+  allow_failures:
+    - env: TOX_ENV=py35-django19
 
 install:
-  - pip install Django==$DJANGO_VERSION
-  - pip install -r requirements-test.txt
+  - pip install tox
 
-script: coverage run --source rest_framework_proxy runtests.py
+script: tox -e $TOX_ENV
 
-after_success: coveralls
+after_success:
+  - pip install codecov
+  - codecov -e TOX_ENV

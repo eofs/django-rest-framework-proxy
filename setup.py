@@ -15,8 +15,8 @@ author = 'Tomi Pajunen'
 author_email = 'tomi@madlab.fi'
 license = 'BSD'
 install_requires = [
-    'django>=1.4',
-    'djangorestframework>=2.2.0',
+    'django>=1.7',
+    'djangorestframework>=3.1.0',
     'requests>=1.1.0'
 ]
 classifiers = [
