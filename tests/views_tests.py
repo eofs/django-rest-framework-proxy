@@ -31,8 +31,7 @@ class ProxyViewTests(TestCase):
         factory = APIRequestFactory()
         request = factory.post('some/url', data={}, cookies={'original_request_cookie': 'I will not get passed'})
         request.content_type = 'application/json'
-        request.QUERY_PARAMS = ''
-        request.DATA = {}
+        request.query_params = ''
         request.data = {}
 
         with patch('rest_framework_proxy.views.requests.request') as patched_requests:
