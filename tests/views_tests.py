@@ -58,9 +58,12 @@ class ProxyViewHeadersTest(TestCase):
             {'AUTH': {'user': username, 'password': password}})
         request = APIRequestFactory().post('')
         headers = view.get_headers(request)
-        self.assertEqual(
-            headers['Authorization'], 'Basic %s' % base64.encodestring(
-                '%s:%s' % (username, password)).replace('\n', ''))
+
+        auth_token = '%s:%s' % (username, password)
+        auth_token = base64.b64encode(auth_token.encode('utf-8')).decode()
+        expected = 'Basic %s' % auth_token
+
+        self.assertEqual(headers['Authorization'], expected)
 
     def test_token(self):
         token = 'xyz'
@@ -75,6 +78,9 @@ class ProxyViewHeadersTest(TestCase):
             {'AUTH': {'user': username, 'password': password, 'token': 'xyz'}})
         request = APIRequestFactory().post('')
         headers = view.get_headers(request)
-        self.assertEqual(
-            headers['Authorization'], 'Basic %s' % base64.encodestring(
-                '%s:%s' % (username, password)).replace('\n', ''))
+
+        auth_token = '%s:%s' % (username, password)
+        auth_token = base64.b64encode(auth_token.encode('utf-8')).decode()
+        expected = 'Basic %s' % auth_token
+
+        self.assertEqual(headers['Authorization'], expected)

@@ -87,8 +87,9 @@ class ProxyView(BaseProxyView):
         username = self.proxy_settings.AUTH.get('user')
         password = self.proxy_settings.AUTH.get('password')
         if username and password:
-            base64string = base64.encodestring('%s:%s' % (username, password)).replace('\n', '')
-            headers['Authorization'] = 'Basic %s' % base64string
+            auth_token = '%s:%s' % (username, password)
+            auth_token = base64.b64encode(auth_token.encode('utf-8')).decode()
+            headers['Authorization'] = 'Basic %s' % auth_token
         else:
             auth_token = self.proxy_settings.AUTH.get('token')
             if auth_token:
