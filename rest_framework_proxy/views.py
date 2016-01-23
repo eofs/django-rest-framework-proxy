@@ -82,13 +82,17 @@ class ProxyView(BaseProxyView):
         # Translate Accept HTTP field
         accept_maps = self.proxy_settings.ACCEPT_MAPS
         for old, new in accept_maps.items():
-           headers['Accept'] = headers['Accept'].replace(old, new)
+            headers['Accept'] = headers['Accept'].replace(old, new)
 
-        username = self.proxy_settings.AUTH['user']
-        password = self.proxy_settings.AUTH['password']
+        username = self.proxy_settings.AUTH.get('user')
+        password = self.proxy_settings.AUTH.get('password')
         if username and password:
             base64string = base64.encodestring('%s:%s' % (username, password)).replace('\n', '')
             headers['Authorization'] = 'Basic %s' % base64string
+        else:
+            auth_token = self.proxy_settings.AUTH.get('token')
+            if auth_token:
+                headers['Authorization'] = 'Token %s' % auth_token
         return headers
 
     def get_verify_ssl(self, request):

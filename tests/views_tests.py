@@ -1,9 +1,11 @@
-from django.test import TestCase
+import base64
 
+from django.test import TestCase
 from mock import Mock, patch
 
 from rest_framework_proxy.views import ProxyView
 from rest_framework.test import APIRequestFactory
+from rest_framework_proxy import settings
 
 
 class ProxyViewTests(TestCase):
@@ -40,3 +42,39 @@ class ProxyViewTests(TestCase):
                 args, kwargs = patched_requests.call_args
                 request_cookies = kwargs['cookies']
                 self.assertEqual(request_cookies, {'test_cookie': 'value'})
+
+
+class ProxyViewHeadersTest(TestCase):
+
+    def get_view(self, custom_settings=None):
+        view = ProxyView()
+        view.proxy_settings = settings.APISettings(
+            custom_settings, settings.DEFAULTS)
+        return view
+
+    def test_basic_auth(self):
+        username, password = 'abc', 'def'
+        view = self.get_view(
+            {'AUTH': {'user': username, 'password': password}})
+        request = APIRequestFactory().post('')
+        headers = view.get_headers(request)
+        self.assertEqual(
+            headers['Authorization'], 'Basic %s' % base64.encodestring(
+                '%s:%s' % (username, password)).replace('\n', ''))
+
+    def test_token(self):
+        token = 'xyz'
+        view = self.get_view({'AUTH': {'token': token}})
+        request = APIRequestFactory().post('')
+        headers = view.get_headers(request)
+        self.assertEqual(headers['Authorization'], 'Token %s' % token)
+
+    def test_basic_auth_before_token(self):
+        username, password = 'abc', 'def'
+        view = self.get_view(
+            {'AUTH': {'user': username, 'password': password, 'token': 'xyz'}})
+        request = APIRequestFactory().post('')
+        headers = view.get_headers(request)
+        self.assertEqual(
+            headers['Authorization'], 'Basic %s' % base64.encodestring(
+                '%s:%s' % (username, password)).replace('\n', ''))
