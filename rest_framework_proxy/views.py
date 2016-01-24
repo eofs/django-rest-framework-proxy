@@ -93,7 +93,7 @@ class ProxyView(BaseProxyView):
         else:
             auth_token = self.proxy_settings.AUTH.get('token')
             if auth_token:
-                headers['Authorization'] = 'Token %s' % auth_token
+                headers['Authorization'] = auth_token
         return headers
 
     def get_verify_ssl(self, request):

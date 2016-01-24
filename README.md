@@ -11,6 +11,7 @@ Provides views to redirect incoming request to another API server.
 
 * Masquerade paths
 * HTTP Basic Auth (between your API and backend API)
+* Token Auth
 * Supported methods: GET/POST/PUT/PATCH
 * File uploads
 
@@ -34,6 +35,8 @@ REST_PROXY = {
     'AUTH': {
         'user': 'myuser',
         'password': 'mypassword',
+        # Or alternatively:
+        'token': 'Token 9944b09199c62bcf9418ad846dd0e4bbdfc6ee4b',
     },
 }
 ```
@@ -93,8 +96,9 @@ url(r'^item/(?P<pk>[0-9]+)$', ProxyDetailView.as_view(), name='item-detail'),
         </tr>
         <tr>
             <td>AUTH</td>
-            <td><code>{'user': None, 'password': None}</code></td>
-            <td>Proxy requests using HTTP Basic Authentication.</td>
+            <td><code>{'user': None, 'password': None, 'token': None}</code></td>
+            <td>Proxy requests using HTTP Basic or Token Authentication.
+            Token is only used if user &amp; password are not provided.</td>
         </tr>
         <tr>
             <td>TIMEOUT</td>
