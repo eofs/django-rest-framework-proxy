@@ -10,6 +10,7 @@ DEFAULTS = {
     'AUTH': {
         'user': None,
         'password': None,
+        'token': None,
     },
     'TIMEOUT': None,
     'DEFAULT_HTTP_ACCEPT': 'application/json',
