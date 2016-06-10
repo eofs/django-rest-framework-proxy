@@ -70,7 +70,7 @@ class ProxyViewHeadersTest(TestCase):
         view = self.get_view({'AUTH': {'token': token}})
         request = APIRequestFactory().post('')
         headers = view.get_headers(request)
-        self.assertEqual(headers['Authorization'], 'Token %s' % token)
+        self.assertEqual(headers['Authorization'], token)
 
     def test_basic_auth_before_token(self):
         username, password = 'abc', 'def'
