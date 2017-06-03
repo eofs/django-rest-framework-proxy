@@ -15,17 +15,26 @@ author = 'Tomi Pajunen'
 author_email = 'tomi@madlab.fi'
 license = 'BSD'
 install_requires = [
-    'django>=1.7',
+    'django>=1.8',
     'djangorestframework>=3.1.0',
     'requests>=1.1.0'
 ]
 classifiers = [
     'Environment :: Web Environment',
     'Framework :: Django',
+    'Framework :: Django :: 1.8',
+    'Framework :: Django :: 1.9',
+    'Framework :: Django :: 1.10',
+    'Framework :: Django :: 1.11',
     'Intended Audience :: Developers',
     'License :: OSI Approved :: BSD License',
     'Operating System :: OS Independent',
     'Programming Language :: Python :: 2.7',
+    'Programming Language :: Python :: 3',
+    'Programming Language :: Python :: 3.3',
+    'Programming Language :: Python :: 3.4',
+    'Programming Language :: Python :: 3.5',
+    'Programming Language :: Python :: 3.6',
     'Topic :: Internet :: WWW/HTTP',
     'Topic :: Internet :: WWW/HTTP :: Dynamic Content',
 ]

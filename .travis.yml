@@ -1,31 +1,33 @@
 language: python
 
+python:
+  - "2.7"
+  - "3.4"
+  - "3.5"
+
 sudo: false
 
 env:
-  - TOX_ENV=py35-django19
-  - TOX_ENV=py34-django19
-  - TOX_ENV=py27-django19
-  - TOX_ENV=py34-django18
-  - TOX_ENV=py33-django18
-  - TOX_ENV=py32-django18
-  - TOX_ENV=py27-django18
-  - TOX_ENV=py34-django17
-  - TOX_ENV=py33-django17
-  - TOX_ENV=py32-django17
-  - TOX_ENV=py27-django17
+  - Django=1.8
+  - Django=1.9
+  - Django=1.10
+  - Django=1.11
 
 matrix:
-  # Python 3.5 not yet available on travis, watch this to see when it is.
   fast_finish: true
-  allow_failures:
-    - env: TOX_ENV=py35-django19
+  include:
+    # Django 1.11 is the first version to officially support Python 3.6
+    - python: "3.6"
+      env: DJANGO=1.11
+    - python: "3.3"
+      env: DJANGO=1.8
 
 install:
-  - pip install tox
+  - pip install tox tox-travis
 
-script: tox -e $TOX_ENV
+script:
+  - tox
 
 after_success:
   - pip install codecov
-  - codecov -e TOX_ENV
+  - codecov -e TOX_ENV;DJANGO
