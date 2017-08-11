@@ -28,7 +28,7 @@ class StreamingMultipart(object):
     def generator(self):
         for (k, v) in self.data.items():
             yield b'%s\r\n\r\n' % self.build_multipart_header(k)
-            yield b'%s\r\n' % v
+            yield b'%s\r\n' % str(v).encode('utf-8')
 
         for (k, v) in self.files.items():
             content_type = mimetypes.guess_type(v.name)[0] or 'application/octet-stream'
@@ -58,7 +58,8 @@ class StreamingMultipart(object):
         if content_type:
             output.append('Content-Type: %s' % content_type)
 
+        output = [s.encode('utf-8') for s in output]
         return b'\r\n'.join(output)
 
     def build_multipart_footer(self):
-        return b'--%s--\r\n' % self.boundary
+        return b'--%s--\r\n' % self.boundary.encode('utf-8')
