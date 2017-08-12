@@ -44,7 +44,7 @@ class StreamingMultipartTests(TestCase):
 
         file_mpheader = next(generator)
         content_type = mimetypes.guess_type('test_file.dat')[0] or 'application/octet-stream'
-        expected_file_mpheader = b'--ddd37654bd80490fa3c58987954aa380\r\nContent-Disposition: form-data; name="file"; filename="test_file.dat"\r\nContent-Type: %s\r\n\r\n' % content_type.encode('utf-8')
+        expected_file_mpheader = ('--ddd37654bd80490fa3c58987954aa380\r\nContent-Disposition: form-data; name="file"; filename="test_file.dat"\r\nContent-Type: %s\r\n\r\n' % content_type).encode('utf-8')
         self.assertEqual(file_mpheader, expected_file_mpheader)
 
         file_body = next(generator)
