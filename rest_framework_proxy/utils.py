@@ -27,12 +27,12 @@ class StreamingMultipart(object):
 
     def generator(self):
         for (k, v) in self.data.items():
-            yield b'%s\r\n\r\n' % self.build_multipart_header(k)
-            yield b'%s\r\n' % v
+            yield ('%s\r\n\r\n' % self.build_multipart_header(k)).encode('utf-8')
+            yield ('%s\r\n' % str(v)).encode('utf-8')
 
         for (k, v) in self.files.items():
             content_type = mimetypes.guess_type(v.name)[0] or 'application/octet-stream'
-            yield b'%s\r\n\r\n' % self.build_multipart_header(k, v.name, content_type)
+            yield ('%s\r\n\r\n' % self.build_multipart_header(k, v.name, content_type)).encode('utf-8')
 
             # Seek back to start as __len__ has already read the file
             v.seek(0)
@@ -44,7 +44,7 @@ class StreamingMultipart(object):
                     break
                 yield data
             yield b'\r\n'
-        yield self.build_multipart_footer()
+        yield self.build_multipart_footer().encode('utf-8')
 
     def build_multipart_header(self, name, filename=None, content_type=None):
         output = []
@@ -58,7 +58,7 @@ class StreamingMultipart(object):
         if content_type:
             output.append('Content-Type: %s' % content_type)
 
-        return b'\r\n'.join(output)
+        return '\r\n'.join(output)
 
     def build_multipart_footer(self):
-        return b'--%s--\r\n' % self.boundary
+        return '--%s--\r\n' % self.boundary

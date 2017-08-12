@@ -1,11 +1,16 @@
 import base64
+import requests
 
+from io import BytesIO
+from django.core.files.uploadedfile import InMemoryUploadedFile
+from django.http.request import QueryDict
 from django.test import TestCase
 from mock import Mock, patch
 
 from rest_framework_proxy.views import ProxyView
 from rest_framework.test import APIRequestFactory
 from rest_framework_proxy import settings
+from rest_framework_proxy.utils import StreamingMultipart
 
 
 class ProxyViewTests(TestCase):
@@ -42,6 +47,39 @@ class ProxyViewTests(TestCase):
                 args, kwargs = patched_requests.call_args
                 request_cookies = kwargs['cookies']
                 self.assertEqual(request_cookies, {'test_cookie': 'value'})
+
+    def test_post_file(self):
+        view = ProxyView()
+
+        factory = APIRequestFactory()
+        request = factory.post('some/url')
+        request.content_type = 'multipart/form-data; boundary='\
+                               '------------------------f8317b014f42e05a'
+        request.query_params = ''
+
+        upload_bstr = b'test binary data'
+        upload_file = BytesIO()
+        upload_file.write(upload_bstr)
+        upload_file.seek(0)
+        upload_data = InMemoryUploadedFile(upload_file,
+                                           'file',
+                                           'test_file.dat',
+                                           'application/octet-stream',
+                                           len(upload_bstr),
+                                           None,
+                                           content_type_extra={})
+
+        request.data = QueryDict(mutable=True)
+        request.data['file'] = upload_data
+        view.get_request_files = lambda r: {'file': upload_data}
+
+        with patch.object(requests.sessions.Session, 'request') as patched_request:
+            with patch.object(view, 'create_response'):
+                view.proxy(request)
+                args, kwargs = patched_request.call_args
+                request_data = kwargs['data']
+                self.assertEqual(request_data.files, {'file': upload_data})
+                self.assertEqual(request_data.data['file'], upload_data)
 
 
 class ProxyViewHeadersTest(TestCase):
