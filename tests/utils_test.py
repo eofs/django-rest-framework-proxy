@@ -1,3 +1,4 @@
+import mimetypes
 import requests
 
 from io import BytesIO
@@ -42,7 +43,8 @@ class StreamingMultipartTests(TestCase):
         self.assertEqual(data_body, expected_data_body)
 
         file_mpheader = next(generator)
-        expected_file_mpheader = b'--ddd37654bd80490fa3c58987954aa380\r\nContent-Disposition: form-data; name="file"; filename="test_file.dat"\r\nContent-Type: application/octet-stream\r\n\r\n'
+        content_type = mimetypes.guess_type('test_file.dat')[0] or 'application/octet-stream'
+        expected_file_mpheader = b'--ddd37654bd80490fa3c58987954aa380\r\nContent-Disposition: form-data; name="file"; filename="test_file.dat"\r\nContent-Type: %s\r\n\r\n' % content_type.encode('utf-8')
         self.assertEqual(file_mpheader, expected_file_mpheader)
 
         file_body = next(generator)
